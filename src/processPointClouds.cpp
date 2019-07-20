@@ -28,12 +28,31 @@ typename pcl::PointCloud<PointT>::Ptr ProcessPointClouds<PointT>::FilterCloud(ty
     auto startTime = std::chrono::steady_clock::now();
 
     // TODO:: Fill in the function to do voxel grid point reduction and region based filtering
+    // Create the filtering object
+    pcl::VoxelGrid<PointT> sor;
+    typename pcl::PointCloud<PointT>::Ptr cloudFiltered(new  pcl::PointCloud<PointT>());
+    sor.setInputCloud (cloud);
+    sor.setLeafSize (filterRes, filterRes, filterRes);
+    sor.filter (*cloudFiltered);
+
+    pcl::CropBox<PointT> cropBox;
+    cropBox.setMin(minPoint);
+    cropBox.setMax(maxPoint);
+    cropBox.setInputCloud(cloudFiltered);
+    cropBox.filter(*cloudFiltered);
+
+    pcl::CropBox<PointT> cropRoofBox;
+    cropRoofBox.setMin(Eigen::Vector4f(-3,-2,-10,1));
+    cropRoofBox.setMax(Eigen::Vector4f(3,2,10,1));
+    cropRoofBox.setNegative(true);
+    cropRoofBox.setInputCloud(cloudFiltered);
+    cropRoofBox.filter(*cloudFiltered);
 
     auto endTime = std::chrono::steady_clock::now();
     auto elapsedTime = std::chrono::duration_cast<std::chrono::milliseconds>(endTime - startTime);
     std::cout << "filtering took " << elapsedTime.count() << " milliseconds" << std::endl;
 
-    return cloud;
+    return cloudFiltered;
 
 }
 
@@ -42,7 +61,7 @@ template<typename PointT>
 std::pair<typename pcl::PointCloud<PointT>::Ptr, typename pcl::PointCloud<PointT>::Ptr> ProcessPointClouds<PointT>::SeparateClouds(pcl::PointIndices::Ptr inliers, typename pcl::PointCloud<PointT>::Ptr cloud) 
 {
   //// TODO: Create two new point clouds, one cloud with obstacles and other with segmented plane
-    pcl::ExtractIndices<pcl::PointXYZ> extract;
+    pcl::ExtractIndices<PointT> extract;
     extract.setInputCloud(cloud);
     extract.setIndices(inliers);
 
@@ -71,7 +90,7 @@ std::pair<typename pcl::PointCloud<PointT>::Ptr, typename pcl::PointCloud<PointT
     pcl::ModelCoefficients::Ptr coefficients (new pcl::ModelCoefficients);
     inliers = pcl::PointIndices::Ptr(new pcl::PointIndices);
     // Create the segmentation object
-    pcl::SACSegmentation<pcl::PointXYZ> seg;
+    typename pcl::SACSegmentation<PointT> seg;
     // Optional
     seg.setOptimizeCoefficients(true);
     // Mandatory
@@ -108,7 +127,7 @@ std::vector<typename pcl::PointCloud<PointT>::Ptr> ProcessPointClouds<PointT>::C
     typename pcl::search::KdTree<PointT>::Ptr tree(new pcl::search::KdTree<PointT>());
     tree->setInputCloud (cloud);
 
-    pcl::EuclideanClusterExtraction<pcl::PointXYZ> ec;
+    pcl::EuclideanClusterExtraction<PointT> ec;
     ec.setClusterTolerance (clusterTolerance); 
     ec.setMinClusterSize (minSize);
     ec.setMaxClusterSize (maxSize);
