@@ -3,7 +3,13 @@
 
 #include "../../render/render.h"
 
-
+inline float computeDistance(const std::vector<float>& a, const std::vector<float>& b){
+	float distance = 0.0;
+	for(size_t i=0; i<a.size(); i++){
+		distance += (a[i]-b[i]) * (a[i]-b[i]);
+	}
+	return sqrt(distance);;
+}
 // Structure to represent node of kd tree
 struct Node
 {
@@ -47,13 +53,7 @@ struct KdTree
 		insertHelper(root, 0, point, id);
 	}
 
-	inline float computeDistance(const std::vector<float>& a, const std::vector<float>& b){
-		float distance = 0.0;
-		for(size_t i=0; i<a.size(); i++){
-			distance += (a[i]-b[i]) * (a[i]-b[i]);
-		}
-		return sqrt(distance);;
-	}
+
 	void searchHelper(Node* &node, size_t depth, std::vector<float>& target, std::vector<int>& innerIndice, float distanceTol)
 	{
 		if(node == NULL)
